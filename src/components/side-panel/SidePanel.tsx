@@ -25,9 +25,7 @@ import Logger, { LoggerFilterType } from "../logger/Logger";
 import "./side-panel.scss";
 
 const filterOptions = [
-  { value: "conversations", label: "Conversations" },
-  { value: "tools", label: "Tool Use" },
-  { value: "none", label: "All" },
+  { value: "conversations", label: "Conversations" }
 ];
 
 export default function SidePanel() {

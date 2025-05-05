@@ -8,33 +8,21 @@ import {
 import "./settings-dialog.scss";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { LiveConfig } from "../../multimodal-live-types";
-import {
-  FunctionDeclaration,
-  FunctionDeclarationsTool,
-  Tool,
-} from "@google/generative-ai";
 import VoiceSelector from "./VoiceSelector";
 import ResponseModalitySelector from "./ResponseModalitySelector";
 
 export default function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const { config, setConfig, connected } = useLiveAPIContext();
-  const functionDeclarations: FunctionDeclaration[] = useMemo(() => {
-    if (!Array.isArray(config.tools)) {
-      return [];
-    }
-    return (config.tools as Tool[])
-      .filter((t: Tool): t is FunctionDeclarationsTool =>
-        Array.isArray((t as any).functionDeclarations)
-      )
-      .map((t) => t.functionDeclarations)
-      .filter((fc) => !!fc)
-      .flat();
-  }, [config]);
 
+  const default_si = "You are a Medical Assistant whose job is to answer questions based on the \
+knowledge mentioned in the context of the conversation.\n\n\
+Instructions:\n\
+   - Never use other knowledge than the one provided in the shared screen, or in the attached document or url.\n\
+   - In particular, never answer a question if you cannot find the answer in the shared screen, or in the attached document or url.\n\
+   - If it happens, just say 'I don't know'."
   const systemInstruction = useMemo(() => {
-    const s = config.systemInstruction?.parts.find((p) => p.text)?.text || "";
-
+    const s = config.systemInstruction?.parts.find((p) => p.text)?.text || default_si;
     return s;
   }, [config]);
 
@@ -45,31 +33,6 @@ export default function SettingsDialog() {
         systemInstruction: {
           parts: [{ text: event.target.value }],
         },
-      };
-      setConfig(newConfig);
-    },
-    [config, setConfig]
-  );
-
-  const updateFunctionDescription = useCallback(
-    (editedFdName: string, newDescription: string) => {
-      const newConfig: LiveConfig = {
-        ...config,
-        tools:
-          config.tools?.map((tool) => {
-            const fdTool = tool as FunctionDeclarationsTool;
-            if (!Array.isArray(fdTool.functionDeclarations)) {
-              return tool;
-            }
-            return {
-              ...tool,
-              functionDeclarations: fdTool.functionDeclarations.map((fd) =>
-                fd.name === editedFdName
-                  ? { ...fd, description: newDescription }
-                  : fd
-              ),
-            };
-          }) || [],
       };
       setConfig(newConfig);
     },
@@ -105,32 +68,6 @@ export default function SettingsDialog() {
             onChange={updateConfig}
             value={systemInstruction}
           />
-          <h4>Function declarations</h4>
-          <div className="function-declarations">
-            <div className="fd-rows">
-              {functionDeclarations.map((fd, fdKey) => (
-                <div className="fd-row" key={`function-${fdKey}`}>
-                  <span className="fd-row-name">{fd.name}</span>
-                  <span className="fd-row-args">
-                    {Object.keys(fd.parameters?.properties || {}).map(
-                      (item, k) => (
-                        <span key={k}>{item}</span>
-                      )
-                    )}
-                  </span>
-                  <input
-                    key={`fd-${fd.description}`}
-                    className="fd-row-description"
-                    type="text"
-                    defaultValue={fd.description}
-                    onBlur={(e) =>
-                      updateFunctionDescription(fd.name, e.target.value)
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </dialog>
     </div>
